@@ -1,0 +1,175 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"html"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"runtime"
+	"strings"
+	"time"
+)
+
+type ErrorMessage struct {
+	Code    string
+	Message string
+}
+
+type Config struct {
+	serverPort         int
+	jwtApiEndpoint     string
+	filesRootDirectory string
+}
+
+var (
+	netTransport *http.Transport
+	netClient    *http.Client
+	config       Config
+)
+
+func main() {
+	logSystemEvent("* Server starting")
+
+	stopServer := make(chan os.Signal, 1)
+	signal.Notify(stopServer, os.Interrupt)
+
+	config = getConfig()
+	logSystemEvent(fmt.Sprintf("serverPort: %q", fmt.Sprint(config.serverPort)))
+	logSystemEvent(fmt.Sprintf("jwtApiEndpoint: %q", config.jwtApiEndpoint))
+	logSystemEvent(fmt.Sprintf("filesRootDirectory: %q", config.filesRootDirectory))
+
+	netTransport = &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 5 * time.Second,
+	}
+
+	netClient = &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: netTransport,
+	}
+
+	httpMux := http.NewServeMux()
+	httpServer := http.Server{Addr: fmt.Sprintf(":%d", config.serverPort), Handler: httpMux}
+	httpMux.HandleFunc("/", httpHandleFunc)
+
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logSystemEvent(fmt.Sprintf("ERROR: %T, %q", err, err))
+		}
+		sig := <-stopServer
+		fmt.Println()
+		fmt.Println(sig)
+	}()
+	<-stopServer
+	httpServer.Shutdown(context.Background())
+	logSystemEvent("* Server gracefully stopped")
+}
+
+func getConfig() Config {
+	return Config{
+		serverPort:         8080,
+		jwtApiEndpoint:     "http://localhost/test.php",
+		filesRootDirectory: "files",
+	}
+}
+
+func httpHandleFunc(w http.ResponseWriter, r *http.Request) {
+	timeStart := time.Now()
+	urlPath := html.EscapeString(r.URL.Path)
+	filename := strings.TrimPrefix(urlPath, "/")
+	var statusCode uint16 = 200
+
+	// TODO ?? (favicon.ico, robots.txt...)
+
+	// auth := r.Header.Get("Authorization")
+	// if auth == "" {
+	// 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// 	w.WriteHeader(401)
+	// 	json.NewEncoder(w).Encode(ErrorMessage{Code: "401", Message: http.StatusText(401)})
+	// 	log.Println("NO TOKEN (" + urlpath + ")")
+	// 	return
+	// }
+
+	// FIXME - here test JWT
+	// token = strings.TrimPrefix(auth, "Bearer ")
+	// bearer := r.Header.Bearer (??)
+	// response, err := netClient.Get(config.jwtApiEndpoint)
+	// if err != nil {
+	// 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// 	w.WriteHeader(401)
+	// 	json.NewEncoder(w).Encode(ErrorMessage{Code: "401", Message: http.StatusText(401)})
+	// 	log.Println("TIMEOUT (" + urlPath + ") ")
+	// 	return
+	// }
+	// if response.StatusCode < 200 || response.StatusCode > 299 {
+	// 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// 	w.WriteHeader(response.StatusCode)
+	// 	stringStatusCode := strconv.Itoa(response.StatusCode)
+	// 	json.NewEncoder(w).Encode(ErrorMessage{Code: stringStatusCode, Message: http.StatusText(response.StatusCode)})
+	// 	log.Println("ERROR " + stringStatusCode + " (" + urlPath + ") ")
+	// 	return
+	// }
+
+	// log.Println("HTTP Response Status:", response.StatusCode, http.StatusText(response.StatusCode))
+
+	// body, _ := ioutil.ReadAll(response.Body)
+	// bodyString := string(body)
+	// log.Println(bodyString)
+
+	filePath := string(config.filesRootDirectory + "/" + filename)
+
+	// data, err := ioutil.ReadFile(path)
+	// if err != nil {
+	// 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// 	w.WriteHeader(404)
+	// 	json.NewEncoder(w).Encode(ErrorMessage{Code: "404", Message: http.StatusText(404)})
+	// 	log.Println("NOT FOUND (" + urlPath + ")")
+	// 	return
+	// }
+
+	// log.Println("DOWNLOAD: " + urlPath)
+
+	// http.ServeContent(w, r, path, time.Now(), bytes.NewReader(data))
+	// http.ServeFile(w, r, "relative/path/to/favicon.ico")
+
+	logAccessToFile(r, timeStart, filePath, statusCode)
+	// for test only
+	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+
+}
+
+func logAccessToFile(r *http.Request, timeStart time.Time, filePath string, statusCode uint16) {
+	timeNow := time.Now()
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	fmt.Printf("%s\t%s\t%s:%s\t%d\t%s\t%vMB\n",
+		getFormattedTime(timeStart),
+		r.RemoteAddr,
+		r.Method,
+		filePath,
+		statusCode,
+		timeNow.Sub(timeStart),
+		bytesInMegabytes(memStats.TotalAlloc),
+	)
+}
+
+func logSystemEvent(message string) {
+	fmt.Printf("%s\tSYS\t%s\n", getFormattedCurrentTime(), message)
+}
+
+func bytesInMegabytes(bytes uint64) uint64 {
+	return bytes / 1024 / 1024
+}
+
+func getFormattedCurrentTime() string {
+	return getFormattedTime(time.Now())
+}
+
+func getFormattedTime(time time.Time) string {
+	return time.Format("2006-01-02 15:04:05")
+}
