@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,36 +13,32 @@ import (
 )
 
 func main() {
-	fmt.Println("start")
+	fmt.Println("STARTING")
 
 	myPid := os.Getpid()
-	fmt.Printf("My PID: %d\n", myPid)
+	fmt.Printf("My PID is: %d\n", myPid)
 
 	config := config.Init()
+	fmt.Print("config: ")
 	fmt.Println(config)
 
 	httpServer := httpserver.Init()
 	httpServer.Port = config.ServerPort
 	httpServer.HandleFunction = httpHandle
 
+	fmt.Print("http server: ")
 	fmt.Println(httpServer)
 
 	httpServer.Start()
 
 	stopServer := make(chan os.Signal, 1)
-	signal.Notify(stopServer,
-		os.Interrupt,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	)
+	signal.Notify(stopServer, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	sig := <-stopServer
-	fmt.Printf("%T %s\n", sig, sig)
+	fmt.Printf("Ask for stop with signal: %T %s\n", sig, sig)
 	httpServer.Stop()
-
 }
 
 func httpHandle(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("akuku")
+	fmt.Fprintf(w, "Hello: %q", html.EscapeString(r.URL.Path))
+	fmt.Println(r.URL.Path)
 }

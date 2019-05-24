@@ -1,12 +1,14 @@
 package httpserver
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
 
-var stopServerChannel = make(chan bool)
+var stopMe = make(chan bool, 1)
 
 type config struct {
 	Port                int
@@ -29,24 +31,42 @@ func (c *config) Start() {
 		fmt.Println("ERROR: Cannot start - no handle function!")
 		return
 	}
-	fmt.Println("HTTP server start")
+	fmt.Println("Server STARTING")
+
+	httpMux := http.NewServeMux()
+	httpServer := http.Server{
+		Addr:    fmt.Sprintf(":%d", c.Port),
+		Handler: httpMux,
+	}
+	httpMux.HandleFunc("/", c.HandleFunction)
 
 	go func() {
-		<-stopServerChannel
-		fmt.Println("HTTP server stop")
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("ERROR: %T, %q", err, err)
+		}
+		fmt.Println("Server STOPPED")
 	}()
+
+	go func() {
+		<-stopMe
+		fmt.Println("Server STOPPING")
+		httpServer.Shutdown(context.Background())
+	}()
+
+	fmt.Println("Server STARTED")
 }
 
 func (c *config) Stop() {
-	fmt.Println("...try stop")
-	stopServerChannel <- true
-	time.Sleep(1000000000)
+	fmt.Println("...we will try to stop the server")
+	stopMe <- true
+	time.Sleep(500000000)
 }
 
-// func main() {
-//     http.HandleFunc("/hello", HelloServer)
-//     err := http.ListenAndServeTLS(":443", "server.crt", "server.key", nil)
-//     if err != nil {
-//         log.Fatal("ListenAndServe: ", err)
-//     }
-// }
+// FIXME
+func startTLS() {
+	// http.HandleFunc("/hello", HelloServer)
+	err := http.ListenAndServeTLS(":443", "server.crt", "server.key", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}
