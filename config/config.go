@@ -21,8 +21,8 @@ func Init() *config {
 	c.ServerTimeout = 5
 	c.ServerDialTimeout = 10
 	c.ServerTlsHandshakeTimeout = 5
-	c.ServerFileCrt = ""
-	c.ServerFileKey = ""
+	c.ServerFileCrt = "cert/test.crt"
+	c.ServerFileKey = "cert/test.key"
 	c.AuthApiEndpoint = "http://localhost/jwt.php"
 	c.AuthApiType = "JWT"
 	c.FilesRootDirectory = "./files"
