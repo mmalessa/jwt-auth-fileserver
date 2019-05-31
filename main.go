@@ -25,6 +25,9 @@ func main() {
 	httpServer := httpserver.Init()
 	httpServer.Port = config.ServerPort
 	httpServer.HandleFunction = httpHandle
+	httpServer.Tls = config.ServerTls
+	httpServer.FileCrt = config.ServerFileCrt
+	httpServer.FileKey = config.ServerFileKey
 
 	fmt.Print("http server: ")
 	fmt.Println(httpServer)

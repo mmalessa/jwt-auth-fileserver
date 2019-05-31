@@ -2,8 +2,8 @@ package httpserver
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 )
@@ -34,15 +34,35 @@ func (c *config) Start() {
 	fmt.Println("Server STARTING")
 
 	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/", c.HandleFunction)
 	httpServer := http.Server{
 		Addr:    fmt.Sprintf(":%d", c.Port),
 		Handler: httpMux,
+		TLSConfig: &tls.Config{
+			MinVersion:               tls.VersionTLS12,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			},
+		},
 	}
-	httpMux.HandleFunc("/", c.HandleFunction)
-
 	go func() {
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("ERROR: %T, %q", err, err)
+		if c.Tls {
+			fmt.Println("    ...with TLS")
+			if err := httpServer.ListenAndServeTLS(c.FileCrt, c.FileKey); err != nil && err != http.ErrServerClosed {
+				fmt.Printf("ERROR: %T, %q", err, err)
+			}
+		} else {
+			fmt.Println("    ...without TLS")
+			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fmt.Printf("ERROR: %T, %q", err, err)
+			}
 		}
 		fmt.Println("Server STOPPED")
 	}()
@@ -60,13 +80,4 @@ func (c *config) Stop() {
 	fmt.Println("...we will try to stop the server")
 	stopMe <- true
 	time.Sleep(500000000)
-}
-
-// FIXME
-func startTLS() {
-	// http.HandleFunc("/hello", HelloServer)
-	err := http.ListenAndServeTLS(":443", "server.crt", "server.key", nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
 }
