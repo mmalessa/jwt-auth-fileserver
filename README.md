@@ -1,13 +1,13 @@
-# Go Http Fileserver with JWT auth
+# Go Http Fileserver with JWT auth ...and more
 
 ## Status
-Development version. Do not use!
+Development version. DO NOT USE!
 
 ## License
 GPL  
 // TODO
 
-## Conception
+## JWT Auth Conception
 ```
 [App Frontend] (with JWT authentication / authorization)
     |
@@ -28,4 +28,9 @@ GPL
 git clone ...
 cd go-http-fileserver-jwt
 go build -o go-http-fileserver-jwt main.go
+```
+
+## Generating self signed test SSL key / crt
+```sh
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./ssl/test.key -out ./ssl/test.crt
 ```
