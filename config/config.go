@@ -1,5 +1,12 @@
 package config
 
+import (
+	"fmt"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
+)
+
 type config struct {
 	ServerPort                int
 	ServerTls                 bool
@@ -14,19 +21,15 @@ type config struct {
 }
 
 func Init() *config {
-	c := new(config)
-	// TODO - read this from YAML file
-	// c.ServerTls = true
-	// c.ServerPort = 443
-	c.ServerTls = false
-	c.ServerPort = 8080
-	c.ServerTimeout = 5
-	c.ServerDialTimeout = 10
-	c.ServerTlsHandshakeTimeout = 5
-	c.ServerFileCrt = "ssl/test.crt"
-	c.ServerFileKey = "ssl/test.key"
-	c.AuthApiType = "dev" // dev | noauth | jwt
-	c.AuthApiEndpoint = "http://localhost/jwt.php"
-	c.FilesRootDirectory = "./files"
-	return c
+	var location = "config.yaml"
+	yamlFile, err := ioutil.ReadFile(location)
+	if err != nil {
+		panic(fmt.Sprintf("Load config ERROR  #%v ", err))
+	}
+	cfg := &config{}
+	err = yaml.Unmarshal(yamlFile, cfg)
+	if err != nil {
+		panic(fmt.Sprintf("Unmarshal ERROR: %v", err))
+	}
+	return cfg
 }

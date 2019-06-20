@@ -18,8 +18,6 @@ func main() {
 	fmt.Printf("My PID is: %d\n", myPid)
 
 	config := config.Init()
-	fmt.Print("config: ")
-	fmt.Println(config)
 
 	httpHandler := httphandler.Init(config.FilesRootDirectory, config.AuthApiType, config.AuthApiEndpoint)
 	// httpHandler.AuthApiEndpoint = config.AuthApiEndpoint
