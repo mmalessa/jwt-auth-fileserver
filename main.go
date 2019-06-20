@@ -21,14 +21,14 @@ func main() {
 	fmt.Print("config: ")
 	fmt.Println(config)
 
-	httpHandler := httphandler.Init()
-	httpHandler.AuthApiEndpoint = config.AuthApiEndpoint
-	httpHandler.AuthApiType = config.AuthApiType
-	httpHandler.FilesRootDirectory = config.FilesRootDirectory
+	httpHandler := httphandler.Init(config.FilesRootDirectory, config.AuthApiType, config.AuthApiEndpoint)
+	// httpHandler.AuthApiEndpoint = config.AuthApiEndpoint
+	// httpHandler.AuthApiType = config.AuthApiType
+	// httpHandler.FilesRootDirectory = config.FilesRootDirectory
 
 	httpServer := httpserver.Init()
 	httpServer.Port = config.ServerPort
-	httpServer.HandleFunction = httpHandler.HttpHandle
+	httpServer.HandleFunction = httpHandler.HandleFunction
 	httpServer.Tls = config.ServerTls
 	httpServer.FileCrt = config.ServerFileCrt
 	httpServer.FileKey = config.ServerFileKey
