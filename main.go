@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -30,13 +31,12 @@ func main() {
 		log.Println(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
-	fmt.Printf("%+v\n", *cfg)
+
+	cfgM, _ := json.MarshalIndent(cfg, "", "  ")
+	fmt.Print("CONFIG: ")
+	fmt.Println(string(cfgM))
 
 	handleFunction = getHandleFunction(cfg.Handler.AuthType)
-
-	_ = handleFunction
-
-	fmt.Print("http server: ")
 
 	startServer()
 
