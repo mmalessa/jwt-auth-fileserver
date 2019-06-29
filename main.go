@@ -2,14 +2,18 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/mmalessa/go-http-fileserver-jwt/config"
-	"github.com/mmalessa/go-http-fileserver-jwt/httphandler"
-	"github.com/mmalessa/go-http-fileserver-jwt/httpserver"
 )
+
+type handleFunctionType func(w http.ResponseWriter, r *http.Request)
+
+var cfg *Config
+var err error
+var handleFunction handleFunctionType
 
 func main() {
 	fmt.Println("STARTING")
@@ -17,28 +21,28 @@ func main() {
 	myPid := os.Getpid()
 	fmt.Printf("My PID is: %d\n", myPid)
 
-	config := config.Init()
+	configFile := "config.yaml"
+	if len(os.Args) > 1 {
+		configFile = os.Args[1]
+	}
+	cfg, err = loadConfig(configFile)
+	if err != nil {
+		log.Println(fmt.Sprintf("ERROR: %v", err))
+		return
+	}
+	fmt.Printf("%+v\n", *cfg)
 
-	httpHandler := httphandler.Init(config.FilesRootDirectory, config.AuthApiType, config.AuthApiEndpoint)
-	// httpHandler.AuthApiEndpoint = config.AuthApiEndpoint
-	// httpHandler.AuthApiType = config.AuthApiType
-	// httpHandler.FilesRootDirectory = config.FilesRootDirectory
+	handleFunction = getHandleFunction(cfg.Handler.AuthType)
 
-	httpServer := httpserver.Init()
-	httpServer.Port = config.ServerPort
-	httpServer.HandleFunction = httpHandler.HandleFunction
-	httpServer.Tls = config.ServerTls
-	httpServer.FileCrt = config.ServerFileCrt
-	httpServer.FileKey = config.ServerFileKey
+	_ = handleFunction
 
 	fmt.Print("http server: ")
-	fmt.Println(httpServer)
 
-	httpServer.Start()
+	startServer()
 
-	stopServer := make(chan os.Signal, 1)
-	signal.Notify(stopServer, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	sig := <-stopServer
+	stopServerChannel := make(chan os.Signal, 1)
+	signal.Notify(stopServerChannel, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	sig := <-stopServerChannel
 	fmt.Printf("Ask for stop with signal: %T %s\n", sig, sig)
-	httpServer.Stop()
+	stopServer()
 }

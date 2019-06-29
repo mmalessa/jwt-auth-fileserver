@@ -1,10 +1,13 @@
-serverport:                8080
-servertls:                 false
-servertimeout:             5
-serverdialtimeout:         10
-servertlshandshaketimeout: 5
-serverfilecrt:             "ssl/test.crt"
-serverfilekey:             "ssl/test.key"
-authapitype:               "dev"
-authapiendpoint:           "http://localhost/jwt.php"
-filesrootdirectory:        "./files"
+server:
+    port: 8080
+    timeout: 5
+    dialtimeout: 10
+    tlsenabled: true
+    tlshandshaketimeout: 5
+    tlsfilecrt: "ssl/test.crt"
+    tlsfilekey: "ssl/test.key"
+
+handler:
+    rootdirectory: "./files"
+    authtype: "dev"
+    jwtloginendpoint: "http://localhost:8000/login"

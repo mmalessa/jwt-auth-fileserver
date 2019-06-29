@@ -1,4 +1,4 @@
-package httpserver
+package main
 
 import (
 	"context"
@@ -8,35 +8,20 @@ import (
 	"time"
 )
 
-var stopMe = make(chan bool, 1)
+var stopServerChannel = make(chan bool, 1)
 
-type config struct {
-	Port                int
-	Tls                 bool
-	Timeout             int
-	DialTimeout         int
-	TlsHandshakeTimeout int
-	HandleFunction      func(w http.ResponseWriter, r *http.Request)
-	FileCrt             string
-	FileKey             string
-}
-
-func Init() *config {
-	c := new(config)
-	return c
-}
-
-func (c *config) Start() {
-	if c.HandleFunction == nil {
+func startServer() {
+	if handleFunction == nil {
 		fmt.Println("ERROR: Cannot start - no handle function!")
 		return
 	}
+
 	fmt.Println("Server STARTING")
 
 	httpMux := http.NewServeMux()
-	httpMux.HandleFunc("/", c.HandleFunction)
+	httpMux.HandleFunc("/", handleFunction)
 	httpServer := http.Server{
-		Addr:    fmt.Sprintf(":%d", c.Port),
+		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler: httpMux,
 		TLSConfig: &tls.Config{
 			MinVersion:               tls.VersionTLS12,
@@ -53,9 +38,9 @@ func (c *config) Start() {
 		},
 	}
 	go func() {
-		if c.Tls {
+		if cfg.Server.TLSEnabled {
 			fmt.Println("    ...with TLS")
-			if err := httpServer.ListenAndServeTLS(c.FileCrt, c.FileKey); err != nil && err != http.ErrServerClosed {
+			if err := httpServer.ListenAndServeTLS(cfg.Server.TLSFileCrt, cfg.Server.TLSFileKey); err != nil && err != http.ErrServerClosed {
 				fmt.Printf("ERROR: %T, %q", err, err)
 			}
 		} else {
@@ -68,7 +53,7 @@ func (c *config) Start() {
 	}()
 
 	go func() {
-		<-stopMe
+		<-stopServerChannel
 		fmt.Println("Server STOPPING")
 		httpServer.Shutdown(context.Background())
 	}()
@@ -76,8 +61,8 @@ func (c *config) Start() {
 	fmt.Println("Server STARTED")
 }
 
-func (c *config) Stop() {
+func stopServer() {
 	fmt.Println("...we will try to stop the server")
-	stopMe <- true
+	stopServerChannel <- true
 	time.Sleep(500000000)
 }
