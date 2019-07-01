@@ -2,12 +2,12 @@ server:
     port: 8080
     timeout: 5
     dialtimeout: 10
-    tlsenabled: true
+    tlsenabled: false
     tlshandshaketimeout: 5
     tlsfilecrt: "ssl/test.crt"
     tlsfilekey: "ssl/test.key"
 
 handler:
     rootdirectory: "./files"
-    authtype: "dev"
+    authtype: "none"
     jwtloginendpoint: "http://localhost:8000/login"

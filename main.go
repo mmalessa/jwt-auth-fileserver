@@ -12,6 +12,11 @@ import (
 
 type handleFunctionType func(w http.ResponseWriter, r *http.Request)
 
+type ErrorMessage struct {
+	Code    string
+	Message string
+}
+
 var cfg *Config
 var err error
 var handleFunction handleFunctionType

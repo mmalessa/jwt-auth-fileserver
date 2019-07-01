@@ -1,2 +1,4 @@
 /ssl/*
 !/ssl/.gitkeep
+/files/*
+!/files/.gitkeep
