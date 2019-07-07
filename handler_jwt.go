@@ -34,12 +34,10 @@ func handleJwt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	request, err := http.NewRequest("GET", cfg.Handler.JwtTestEndpoint+"?file="+filename, nil)
-	// FIXME - add token structure validation ...or something
 	tokenString := strings.TrimPrefix(auth, "Bearer ")
 	request.Header.Add("Authorization", "Bearer "+tokenString)
 	httpClient := &http.Client{}
 	response, err := httpClient.Do(request)
-
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(500)
@@ -47,7 +45,6 @@ func handleJwt(w http.ResponseWriter, r *http.Request) {
 		log.Println(fmt.Sprintf("ERROR %v", err))
 		return
 	}
-
 	if response.StatusCode < 200 || response.StatusCode > 299 {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(response.StatusCode)
