@@ -9,5 +9,5 @@ server:
 
 handler:
     rootdirectory: "./files"
-    authtype: "none"
-    jwtloginendpoint: "http://localhost:8000/login"
+    authtype: "jwt"
+    jwttestendpoint: "http://localhost:8000/test"

@@ -19,9 +19,9 @@ type Config struct {
 		TLSFileKey          string
 	}
 	Handler struct {
-		RootDirectory    string
-		AuthType         string
-		JwtLoginEndpoint string
+		RootDirectory   string
+		AuthType        string
+		JwtTestEndpoint string
 	}
 }
 
